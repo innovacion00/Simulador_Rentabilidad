@@ -34,8 +34,8 @@ export function Hero({ onSimulate }: { onSimulate: () => void }) {
             className="animate-fade-up font-display text-4xl font-medium leading-[1.08] text-sand-50 sm:text-5xl lg:text-6xl"
             style={{ animationDelay: "140ms" }}
           >
-            Simulador de rentabilidad para inversionistas{" "}
-            <span className="text-caribbean-300">Sunno Blue</span>
+            Simulador de rentabilidad {" "}
+            <span className="text-caribbean-300"></span>
           </h1>
 
           <p

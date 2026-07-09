@@ -42,6 +42,8 @@ export interface SimulatorInputs {
   predialPct: number;
   segurosPct: number;
   impuestoRentaPct: number;
+  /** Comisión de administración Smart Stay / GEH, sobre la utilidad operacional. */
+  comisionSmartStayPct: number;
 }
 
 export interface FinancialLineItem {

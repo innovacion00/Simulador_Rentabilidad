@@ -93,7 +93,7 @@ export function FooterCTA({
         <div className="mt-8 flex flex-col items-start gap-6 sm:flex-row sm:items-center sm:justify-between">
           <BrandBar className="[&_span]:text-sand-50" />
           <p className="text-xs text-sand-100/50">
-            © {new Date().getFullYear()} Sunno Blue · Comercializado por Smart Estate / Smart
+            © {new Date().getFullYear()} Sunno Blue · Comercializado por Smart
             Stay. Todos los derechos reservados.
           </p>
         </div>

@@ -20,6 +20,11 @@ const numberFormatter = new Intl.NumberFormat("es-CO", {
   maximumFractionDigits: 0,
 });
 
+const percentValueFormatter = new Intl.NumberFormat("es-CO", {
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+});
+
 export function formatCOP(value: number): string {
   return copFormatter.format(Number.isFinite(value) ? value : 0);
 }
@@ -31,6 +36,11 @@ export function formatUSD(value: number): string {
 /** `value` es una fracción (0.145 -> 14.5%). */
 export function formatPercent(value: number): string {
   return percentFormatter.format(Number.isFinite(value) ? value : 0);
+}
+
+/** Igual que formatPercent pero sin el símbolo %, para etiquetas como "EF anual". */
+export function formatPercentValue(value: number): string {
+  return percentValueFormatter.format((Number.isFinite(value) ? value : 0) * 100);
 }
 
 export function formatNumber(value: number): string {

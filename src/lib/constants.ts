@@ -1,4 +1,4 @@
-import type { Typology, OccupancyScenarioKey } from "./types";
+import type { Typology, TypologyGroup, OccupancyScenarioKey } from "./types";
 
 export const PROJECT_NAME = "Sunno Blue";
 
@@ -100,6 +100,24 @@ export function getTypologyById(id: string): Typology {
   if (!found) return QUICK_TYPOLOGIES[0];
   return found;
 }
+
+/** ADR base de Casa A y B: raíz del cálculo en cascada de servicios públicos. */
+export const AB_BASE_ADR_COP = GROUP_BASE["Casa A y B"].adr;
+
+/**
+ * Incremento del costo de servicios públicos de cada grupo de tipología frente a la
+ * base de Casa A y B (escenario pesimista). Casa E no tiene dato oficial: se extrapola
+ * siguiendo la progresión de Casa C (+12%) y Casa D (+25%), sujeto a ajuste.
+ */
+export const SERVICIOS_TIPOLOGIA_INCREMENT: Record<TypologyGroup, number> = {
+  "Casa A y B": 0,
+  "Casa C": 0.12,
+  "Casa D": 0.25,
+  "Casa E": 0.38,
+};
+
+/** Incremento de servicios públicos al pasar de pesimista a conservador, y de conservador a optimista. */
+export const SERVICIOS_ESCALON_PCT = 0.05;
 
 /** Presets rápidos de ADR (COP/noche), ademas de un valor personalizado. */
 export const ADR_PRESETS_COP = [

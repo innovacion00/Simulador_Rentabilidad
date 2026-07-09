@@ -270,8 +270,8 @@ export function SimulatorForm({ inputs, errors, onChange }: SimulatorFormProps) 
       {advancedOpen ? (
         <div className="mt-4 grid gap-5 rounded-2xl bg-sand-100/60 p-5 sm:grid-cols-2">
           <FieldShell
-            label="Servicios públicos (% ventas)"
-            hint="Base sugerida 19%; ajustable según consumo real de la unidad."
+            label="Servicios públicos — base Casa A y B / Pesimista (%)"
+            hint="Base sugerida 19% sobre ventas de Casa A y B en escenario pesimista. Conservador y optimista suman 5% en cascada; Casa C y D parten de esta base con un incremento fijo por tipología."
           >
             <NumberInput
               value={inputs.serviciosPublicosPct * 100}
@@ -293,10 +293,13 @@ export function SimulatorForm({ inputs, errors, onChange }: SimulatorFormProps) 
               prefix="%"
             />
           </FieldShell>
-          <FieldShell label="Seguros (% ventas)" hint="Campo opcional, editable a futuro.">
+          <FieldShell
+            label="Comisión Smart Stay / GEH (% utilidad operacional)"
+            hint="Base sugerida 11%; comisión de administración sobre la utilidad operacional."
+          >
             <NumberInput
-              value={inputs.segurosPct * 100}
-              onChange={(v) => onChange({ segurosPct: v / 100 })}
+              value={inputs.comisionSmartStayPct * 100}
+              onChange={(v) => onChange({ comisionSmartStayPct: v / 100 })}
               min={0}
               max={100}
               prefix="%"

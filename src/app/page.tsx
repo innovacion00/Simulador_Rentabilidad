@@ -37,6 +37,7 @@ const INITIAL_INPUTS: SimulatorInputs = {
   predialPct: FINANCIAL_RATES.predialPctAnualSobreValor,
   segurosPct: FINANCIAL_RATES.segurosPct,
   impuestoRentaPct: FINANCIAL_RATES.impuestoRentaPct,
+  comisionSmartStayPct: FINANCIAL_RATES.comisionSmartStayPct,
 };
 
 const SCENARIO_KEYS: OccupancyScenarioKey[] = ["pesimista", "conservador", "optimista"];
@@ -84,7 +85,7 @@ export default function Home() {
                   inputs.occupancyScenario
                 )}`}
               />
-              <KPIResults result={result} />
+              <KPIResults result={result} displayCurrency={inputs.displayCurrency} />
             </section>
 
             <DetailedTable result={result} />

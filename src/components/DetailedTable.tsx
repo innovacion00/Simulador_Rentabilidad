@@ -1,7 +1,7 @@
 "use client";
 
 import type { SimulationResult } from "@/lib/types";
-import { formatCOP, formatPercent, formatUSD } from "@/lib/format";
+import { formatCOP, formatPercent, formatPercentValue, formatUSD } from "@/lib/format";
 
 export function DetailedTable({ result }: { result: SimulationResult }) {
   return (
@@ -49,8 +49,8 @@ export function DetailedTable({ result }: { result: SimulationResult }) {
                       <td className="py-2.5 pr-4 text-right text-ink-400">—</td>
                       <td className="py-2.5 pr-4 text-right text-ink-400">—</td>
                       <td className="py-2.5 pl-4 text-right">
-                        {formatPercent(result.rentabilidadAnual)} anual ·{" "}
-                        {formatPercent(result.rentabilidadMensual)} mensual
+                        {formatPercentValue(result.rentabilidadAnual)} EF Anual ·{" "}
+                        {formatPercent(result.rentabilidadMensual)} Mensual
                       </td>
                     </>
                   ) : (
@@ -60,11 +60,20 @@ export function DetailedTable({ result }: { result: SimulationResult }) {
                       <td className="py-2.5 pr-4 text-right tabular-nums">{formatUSD(row.monthlyUSD)}</td>
                       <td className="py-2.5 pr-4 text-right tabular-nums">{formatUSD(row.annualUSD)}</td>
                       <td className="py-2.5 pl-4 text-right">
-                        {row.key === "predial"
-                          ? "s/ valor"
-                          : row.percent === null
-                          ? "—"
-                          : formatPercent(row.percent)}
+                        {row.key === "predial" ? (
+                          "s/ valor"
+                        ) : row.key === "serviciosPublicos" ? (
+                          "s/ escenario"
+                        ) : row.percent === null ? (
+                          "—"
+                        ) : row.key === "comisionSmartStay" || row.key === "impuestoRenta" ? (
+                          <>
+                            {formatPercent(row.percent)}
+                            <span className="text-ink-400"> s/ util. oper.</span>
+                          </>
+                        ) : (
+                          formatPercent(row.percent)
+                        )}
                       </td>
                     </>
                   )}

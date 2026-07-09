@@ -1,4 +1,12 @@
-import { FINANCIAL_RATES, OCCUPANCY_SCENARIOS, SCENARIO_ADR_INCREMENT } from "./constants";
+import {
+  AB_BASE_ADR_COP,
+  FINANCIAL_RATES,
+  OCCUPANCY_SCENARIOS,
+  SCENARIO_ADR_INCREMENT,
+  SERVICIOS_ESCALON_PCT,
+  SERVICIOS_TIPOLOGIA_INCREMENT,
+  getTypologyById,
+} from "./constants";
 import { convertCOPtoUSD, convertUSDtoCOP } from "./format";
 import type {
   FinancialLineItem,
@@ -6,6 +14,7 @@ import type {
   ScenarioResult,
   SimulationResult,
   SimulatorInputs,
+  TypologyGroup,
 } from "./types";
 
 /** Ingresos brutos anuales por hospedaje: ADR x días disponibles x % ocupación. */
@@ -16,6 +25,41 @@ export function calculateAnnualRevenue(
 ): number {
   const occupancyFraction = clamp(occupancyPct, 0, 100) / 100;
   return Math.max(adrCOP, 0) * Math.max(availableDays, 0) * occupancyFraction;
+}
+
+/**
+ * Servicios públicos ya no se calcula como % de las ventas del escenario activo.
+ * Se fija una única base (Casa A y B, escenario pesimista = serviciosPublicosPct x
+ * ventas de Casa A y B en pesimista) y todo lo demás se deriva en cascada:
+ * conservador = pesimista x 1.05, optimista = conservador x 1.05, y cada tipología
+ * superior parte del pesimista de Casa A y B con su propio incremento fijo.
+ */
+export function calculateServiciosPublicosCOP(
+  group: TypologyGroup,
+  scenario: OccupancyScenarioKey,
+  availableDays: number,
+  serviciosPublicosPct: number
+): number {
+  const ventasBaseAB = calculateAnnualRevenue(
+    AB_BASE_ADR_COP,
+    availableDays,
+    OCCUPANCY_SCENARIOS.pesimista.occupancyPct
+  );
+  const pesimistaAB = serviciosPublicosPct * ventasBaseAB;
+  const pesimistaGroup = pesimistaAB * (1 + SERVICIOS_TIPOLOGIA_INCREMENT[group]);
+  const conservadorGroup = pesimistaGroup * (1 + SERVICIOS_ESCALON_PCT);
+  const optimistaGroup = conservadorGroup * (1 + SERVICIOS_ESCALON_PCT);
+
+  switch (scenario) {
+    case "pesimista":
+      return pesimistaGroup;
+    case "optimista":
+      return optimistaGroup;
+    case "conservador":
+    case "personalizado":
+    default:
+      return conservadorGroup;
+  }
 }
 
 interface CostBreakdown {
@@ -38,7 +82,7 @@ export function calculateCosts(
   ventasBrutasAnualCOP: number,
   purchaseValueCOP: number,
   rates: {
-    serviciosPublicosPct: number;
+    serviciosPublicosCOP: number;
     predialPct: number;
     segurosPct: number;
   }
@@ -51,7 +95,7 @@ export function calculateCosts(
   const aseoAnualCOP = ventasBrutasAnualCOP * FINANCIAL_RATES.aseoAmenitiesPct;
   const mantenimientoAnualCOP = ventasBrutasAnualCOP * FINANCIAL_RATES.mantenimientoPct;
   const gastosFinancierosAnualCOP = ventasBrutasAnualCOP * FINANCIAL_RATES.gastosFinancierosPct;
-  const serviciosPublicosAnualCOP = ventasBrutasAnualCOP * rates.serviciosPublicosPct;
+  const serviciosPublicosAnualCOP = rates.serviciosPublicosCOP;
   const predialAnualCOP = purchaseValueCOP * rates.predialPct;
   const segurosAnualCOP = ventasBrutasAnualCOP * rates.segurosPct;
 
@@ -104,14 +148,22 @@ export function runSimulation(inputs: SimulatorInputs): SimulationResult {
     inputs.occupancyPct
   );
 
+  const typologyGroup = getTypologyById(inputs.typologyId).group;
+  const serviciosPublicosCOP = calculateServiciosPublicosCOP(
+    typologyGroup,
+    inputs.occupancyScenario,
+    inputs.availableDays,
+    inputs.serviciosPublicosPct
+  );
+
   const costs = calculateCosts(ventasBrutasAnualCOP, purchaseValueCOP, {
-    serviciosPublicosPct: inputs.serviciosPublicosPct,
+    serviciosPublicosCOP,
     predialPct: inputs.predialPct,
     segurosPct: inputs.segurosPct,
   });
 
   const comisionSmartStayAnualCOP =
-    costs.utilidadOperacionalAnualCOP * FINANCIAL_RATES.comisionSmartStayPct;
+    costs.utilidadOperacionalAnualCOP * inputs.comisionSmartStayPct;
   const impuestoRentaAnualCOP = costs.utilidadOperacionalAnualCOP * inputs.impuestoRentaPct;
   const utilidadNetaAnualCOP =
     costs.utilidadOperacionalAnualCOP - comisionSmartStayAnualCOP - impuestoRentaAnualCOP;
@@ -179,6 +231,7 @@ export function calculateScenario(
     ...baseInputs,
     adr: adrCOP,
     occupancyPct: scenario.occupancyPct,
+    occupancyScenario: key,
   };
   return {
     key,
@@ -218,6 +271,8 @@ function buildTable(
   });
 
   const pct = (value: number) => (ventasBrutasAnualCOP > 0 ? value / ventasBrutasAnualCOP : 0);
+  const pctOfOperational = (value: number) =>
+    costs.utilidadOperacionalAnualCOP > 0 ? value / costs.utilidadOperacionalAnualCOP : 0;
 
   return [
     row("ventasBrutas", "Ventas brutas", ventasBrutasAnualCOP, 1, "subtotal"),
@@ -234,7 +289,7 @@ function buildTable(
     row("aseo", "Aseo, amenities, lencería y lavandería", -costs.aseoAnualCOP, -FINANCIAL_RATES.aseoAmenitiesPct),
     row("mantenimiento", "Mantenimiento", -costs.mantenimientoAnualCOP, -FINANCIAL_RATES.mantenimientoPct),
     row("gastosFinancieros", "Gastos financieros / datáfonos", -costs.gastosFinancierosAnualCOP, -pct(costs.gastosFinancierosAnualCOP)),
-    row("serviciosPublicos", "Servicios públicos", -costs.serviciosPublicosAnualCOP, -pct(costs.serviciosPublicosAnualCOP)),
+    row("serviciosPublicos", "Servicios públicos", -costs.serviciosPublicosAnualCOP, null),
     row("predial", "Predial (anual s/ valor propiedad)", -costs.predialAnualCOP, null),
     row("seguros", "Seguros", -costs.segurosAnualCOP, -pct(costs.segurosAnualCOP)),
     row(
@@ -251,8 +306,18 @@ function buildTable(
       pct(costs.utilidadOperacionalAnualCOP),
       "subtotal"
     ),
-    row("comisionSmartStay", "Comisión Smart Stay / GEH", -totals.comisionSmartStayAnualCOP, -pct(totals.comisionSmartStayAnualCOP)),
-    row("impuestoRenta", "Impuesto de renta", -totals.impuestoRentaAnualCOP, -pct(totals.impuestoRentaAnualCOP)),
+    row(
+      "comisionSmartStay",
+      "Comisión Smart Stay / GEH",
+      -totals.comisionSmartStayAnualCOP,
+      -pctOfOperational(totals.comisionSmartStayAnualCOP)
+    ),
+    row(
+      "impuestoRenta",
+      "Impuesto de renta",
+      -totals.impuestoRentaAnualCOP,
+      -pctOfOperational(totals.impuestoRentaAnualCOP)
+    ),
     row("utilidadNeta", "Utilidad neta propietario", totals.utilidadNetaAnualCOP, pct(totals.utilidadNetaAnualCOP), "total"),
     row("rentabilidad", "Rentabilidad sobre inversión", 0, totals.rentabilidadAnual, "total"),
   ];

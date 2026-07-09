@@ -1,91 +1,92 @@
 "use client";
 
-import type { SimulationResult } from "@/lib/types";
+import type { Currency, SimulationResult } from "@/lib/types";
 import { formatCOP, formatPercent, formatUSD } from "@/lib/format";
 
 interface KPIResultsProps {
   result: SimulationResult;
+  displayCurrency: Currency;
 }
 
-export function KPIResults({ result }: KPIResultsProps) {
+export function KPIResults({ result, displayCurrency }: KPIResultsProps) {
+  const otherCurrency: Currency = displayCurrency === "COP" ? "USD" : "COP";
+
+  const money = (amountCOP: number) => {
+    const value = displayCurrency === "COP" ? formatCOP(amountCOP) : formatUSD(amountCOP / result.exchangeRate);
+    const secondary =
+      otherCurrency === "COP" ? formatCOP(amountCOP) : formatUSD(amountCOP / result.exchangeRate);
+    return { value, secondary };
+  };
+
+  const totalCostosMensual =
+    (result.totalCostoVentasAnualCOP + result.totalGastosOperacionAnualCOP) / 12;
+  const totalCostosAnual = result.totalCostoVentasAnualCOP + result.totalGastosOperacionAnualCOP;
+
   const cards: {
     label: string;
-    valueCOP: number | string;
-    valueUSD?: number | string;
+    value: string;
+    secondary?: string;
     isPercent?: boolean;
     icon: (props: { className?: string }) => React.ReactElement;
     accent?: "gold" | "caribbean";
   }[] = [
     {
       label: "Inversión total",
-      valueCOP: formatCOP(result.purchaseValueCOP),
-      valueUSD: formatUSD(result.purchaseValueUSD),
+      ...money(result.purchaseValueCOP),
       icon: IconBuilding,
     },
     {
       label: "Ingresos mensuales proyectados",
-      valueCOP: formatCOP(result.ventasBrutasAnualCOP / 12),
-      valueUSD: formatUSD(result.ventasBrutasAnualCOP / 12 / result.exchangeRate),
+      ...money(result.ventasBrutasAnualCOP / 12),
       icon: IconTrendUp,
     },
     {
       label: "Ingresos anuales proyectados",
-      valueCOP: formatCOP(result.ventasBrutasAnualCOP),
-      valueUSD: formatUSD(result.ventasBrutasAnualCOP / result.exchangeRate),
+      ...money(result.ventasBrutasAnualCOP),
       icon: IconTrendUp,
     },
     {
       label: "Costos y gastos mensuales",
-      valueCOP: formatCOP(
-        (result.totalCostoVentasAnualCOP + result.totalGastosOperacionAnualCOP) / 12
-      ),
-      valueUSD: formatUSD(
-        (result.totalCostoVentasAnualCOP + result.totalGastosOperacionAnualCOP) /
-          12 /
-          result.exchangeRate
-      ),
+      ...money(totalCostosMensual),
       icon: IconReceipt,
     },
     {
       label: "Costos y gastos anuales",
-      valueCOP: formatCOP(result.totalCostoVentasAnualCOP + result.totalGastosOperacionAnualCOP),
-      valueUSD: formatUSD(
-        (result.totalCostoVentasAnualCOP + result.totalGastosOperacionAnualCOP) /
-          result.exchangeRate
-      ),
+      ...money(totalCostosAnual),
       icon: IconReceipt,
     },
     {
       label: "Utilidad neta mensual del propietario",
-      valueCOP: formatCOP(result.utilidadNetaMensualCOP),
-      valueUSD: formatUSD(result.utilidadNetaMensualCOP / result.exchangeRate),
+      ...money(result.utilidadNetaMensualCOP),
       icon: IconWallet,
       accent: "caribbean",
     },
     {
       label: "Utilidad neta anual del propietario",
-      valueCOP: formatCOP(result.utilidadNetaAnualCOP),
-      valueUSD: formatUSD(result.utilidadNetaAnualCOP / result.exchangeRate),
+      ...money(result.utilidadNetaAnualCOP),
       icon: IconWallet,
       accent: "caribbean",
     },
     {
       label: "Rentabilidad mensual",
-      valueCOP: formatPercent(result.rentabilidadMensual),
+      value: formatPercent(result.rentabilidadMensual),
       isPercent: true,
       icon: IconGauge,
       accent: "gold",
     },
     {
       label: "Rentabilidad anual",
-      valueCOP: formatPercent(result.rentabilidadAnual),
+      value: formatPercent(result.rentabilidadAnual),
       isPercent: true,
       icon: IconGauge,
       accent: "gold",
     },
     {
-      label: "Equivalente utilidad neta anual en USD",
-      valueCOP: formatUSD(result.utilidadNetaAnualCOP / result.exchangeRate),
+      label: `Equivalente utilidad neta anual en ${otherCurrency}`,
+      value:
+        otherCurrency === "USD"
+          ? formatUSD(result.utilidadNetaAnualCOP / result.exchangeRate)
+          : formatCOP(result.utilidadNetaAnualCOP),
       icon: IconDollar,
     },
   ];
@@ -117,11 +118,9 @@ export function KPIResults({ result }: KPIResultsProps) {
           <p className="text-xs font-semibold uppercase tracking-wide text-ink-400">
             {card.label}
           </p>
-          <p className="mt-1.5 font-display text-xl font-medium text-navy-900">
-            {card.valueCOP}
-          </p>
-          {card.valueUSD ? (
-            <p className="mt-0.5 text-xs font-medium text-ink-400">≈ {card.valueUSD}</p>
+          <p className="mt-1.5 font-display text-xl font-medium text-navy-900">{card.value}</p>
+          {card.secondary ? (
+            <p className="mt-0.5 text-xs font-medium text-ink-400">≈ {card.secondary}</p>
           ) : null}
         </div>
       ))}
