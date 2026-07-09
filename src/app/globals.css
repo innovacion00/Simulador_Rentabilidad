@@ -1,0 +1,103 @@
+@import "tailwindcss";
+
+:root {
+  --color-navy-950: #051324;
+  --color-navy-900: #0a2540;
+  --color-navy-800: #0f3358;
+  --color-navy-700: #15436f;
+  --color-caribbean-600: #0074bc;
+  --color-caribbean-500: #1a94d6;
+  --color-caribbean-400: #3fa4dd;
+  --color-caribbean-300: #7ec4e8;
+  --color-sand-50: #fdfbf7;
+  --color-sand-100: #f7f1e6;
+  --color-sand-200: #efe4cf;
+  --color-gold-500: #c9a24b;
+  --color-gold-400: #d9b978;
+  --color-gold-300: #e8d3a3;
+  --color-ink-900: #0e1b26;
+  --color-ink-600: #45566a;
+  --color-ink-400: #7c8ba0;
+
+  --background: var(--color-sand-50);
+  --foreground: var(--color-ink-900);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-navy-950: var(--color-navy-950);
+  --color-navy-900: var(--color-navy-900);
+  --color-navy-800: var(--color-navy-800);
+  --color-navy-700: var(--color-navy-700);
+  --color-caribbean-600: var(--color-caribbean-600);
+  --color-caribbean-500: var(--color-caribbean-500);
+  --color-caribbean-400: var(--color-caribbean-400);
+  --color-caribbean-300: var(--color-caribbean-300);
+  --color-sand-50: var(--color-sand-50);
+  --color-sand-100: var(--color-sand-100);
+  --color-sand-200: var(--color-sand-200);
+  --color-gold-500: var(--color-gold-500);
+  --color-gold-400: var(--color-gold-400);
+  --color-gold-300: var(--color-gold-300);
+  --color-ink-900: var(--color-ink-900);
+  --color-ink-600: var(--color-ink-600);
+  --color-ink-400: var(--color-ink-400);
+
+  --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-fraunces), ui-serif, Georgia, serif;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
+
+@keyframes float-slow {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-float-slow {
+  animation: float-slow 6s ease-in-out infinite;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.6s ease-out both;
+}
+
+.bg-grain {
+  background-image: radial-gradient(
+    circle at 1px 1px,
+    rgba(255, 255, 255, 0.08) 1px,
+    transparent 0
+  );
+  background-size: 22px 22px;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  height: 8px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: var(--color-caribbean-300);
+  border-radius: 9999px;
+}
