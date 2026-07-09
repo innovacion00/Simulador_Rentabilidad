@@ -16,7 +16,7 @@ export function SmartStayLogo({ className = "" }: { className?: string }) {
 
 export function SunnoBlueLogo({ className = "" }: { className?: string }) {
   return (
-    <div className={`relative h-16 w-48 sm:h-20 sm:w-60 ${className}`} aria-label="Sunno Blue">
+    <div className={`relative h-11 w-32 sm:h-14 sm:w-40 ${className}`} aria-label="Sunno Blue">
       <Image
         src="/logos/sunno-blue.svg"
         alt="Sunno Blue"
