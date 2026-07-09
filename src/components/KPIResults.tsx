@@ -29,6 +29,7 @@ export function KPIResults({ result, displayCurrency }: KPIResultsProps) {
     isPercent?: boolean;
     icon: (props: { className?: string }) => React.ReactElement;
     accent?: "gold" | "caribbean";
+    highlight?: boolean;
   }[] = [
     {
       label: "Inversión total",
@@ -39,11 +40,13 @@ export function KPIResults({ result, displayCurrency }: KPIResultsProps) {
       label: "Ingresos mensuales proyectados",
       ...money(result.ventasBrutasAnualCOP / 12),
       icon: IconTrendUp,
+      highlight: true,
     },
     {
       label: "Ingresos anuales proyectados",
       ...money(result.ventasBrutasAnualCOP),
       icon: IconTrendUp,
+      highlight: true,
     },
     {
       label: "Costos y gastos mensuales",
@@ -60,12 +63,14 @@ export function KPIResults({ result, displayCurrency }: KPIResultsProps) {
       ...money(result.utilidadNetaMensualCOP),
       icon: IconWallet,
       accent: "caribbean",
+      highlight: true,
     },
     {
       label: "Utilidad neta anual del propietario",
       ...money(result.utilidadNetaAnualCOP),
       icon: IconWallet,
       accent: "caribbean",
+      highlight: true,
     },
     {
       label: "Rentabilidad mensual",
@@ -118,7 +123,13 @@ export function KPIResults({ result, displayCurrency }: KPIResultsProps) {
           <p className="text-xs font-semibold uppercase tracking-wide text-ink-400">
             {card.label}
           </p>
-          <p className="mt-1.5 font-display text-xl font-medium text-navy-900">{card.value}</p>
+          <p
+            className={`mt-1.5 font-display text-xl font-medium ${
+              card.highlight ? "text-green-600" : "text-navy-900"
+            }`}
+          >
+            {card.value}
+          </p>
           {card.secondary ? (
             <p className="mt-0.5 text-xs font-medium text-ink-400">≈ {card.secondary}</p>
           ) : null}

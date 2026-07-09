@@ -16,7 +16,7 @@ export async function downloadSimulationPDF(typology: Typology, result: Simulati
   doc.text("Simulador de Rentabilidad — Sunno Blue", 14, 13);
   doc.setFontSize(10);
   doc.setTextColor(230, 230, 230);
-  doc.text("Smart Estate · Smart Stay", 14, 20);
+  doc.text("Smart Stay", 14, 20);
 
   doc.setTextColor(...navy);
   doc.setFontSize(12);
@@ -59,6 +59,16 @@ export async function downloadSimulationPDF(typology: Typology, result: Simulati
 
   const finalY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY;
 
+  const boldRowKeys = new Set([
+    "ventasBrutas",
+    "totalCostoVentas",
+    "utilidadBruta",
+    "totalGastosOperacion",
+    "utilidadOperacional",
+    "utilidadNeta",
+    "rentabilidad",
+  ]);
+
   autoTable(doc, {
     startY: finalY + 10,
     head: [["Concepto", "Mensual COP", "Anual COP", "%"]],
@@ -70,6 +80,11 @@ export async function downloadSimulationPDF(typology: Typology, result: Simulati
     ]),
     headStyles: { fillColor: gold, textColor: navy },
     styles: { fontSize: 8.5 },
+    didParseCell: (data) => {
+      if (data.section === "body" && boldRowKeys.has(result.table[data.row.index]?.key)) {
+        data.cell.styles.fontStyle = "bold";
+      }
+    },
   });
 
   const pageHeight = doc.internal.pageSize.getHeight();
