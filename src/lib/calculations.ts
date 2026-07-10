@@ -1,6 +1,5 @@
 import {
   AB_BASE_ADR_COP,
-  FINANCIAL_RATES,
   OCCUPANCY_SCENARIOS,
   SCENARIO_ADR_INCREMENT,
   SERVICIOS_ESCALON_PCT,
@@ -82,22 +81,36 @@ export function calculateCosts(
   ventasBrutasAnualCOP: number,
   purchaseValueCOP: number,
   rates: {
+    comisionOnlinePct: number;
+    faraPct: number;
+    aseoAmenitiesPct: number;
+    mantenimientoPct: number;
+    gastosFinancierosPct: number;
     serviciosPublicosCOP: number;
     predialPct: number;
     segurosPct: number;
-  }
+  },
+  rowEnabled: Partial<Record<string, boolean>> = {}
 ): CostBreakdown {
-  const comisionOnlineAnualCOP = ventasBrutasAnualCOP * FINANCIAL_RATES.comisionOnlinePct;
-  const faraAnualCOP = ventasBrutasAnualCOP * FINANCIAL_RATES.faraPct;
+  const isOn = (key: string) => rowEnabled[key] !== false;
+
+  const comisionOnlineAnualCOP = isOn("comisionOnline")
+    ? ventasBrutasAnualCOP * rates.comisionOnlinePct
+    : 0;
+  const faraAnualCOP = isOn("fara") ? ventasBrutasAnualCOP * rates.faraPct : 0;
   const totalCostoVentasAnualCOP = comisionOnlineAnualCOP + faraAnualCOP;
   const utilidadBrutaAnualCOP = ventasBrutasAnualCOP - totalCostoVentasAnualCOP;
 
-  const aseoAnualCOP = ventasBrutasAnualCOP * FINANCIAL_RATES.aseoAmenitiesPct;
-  const mantenimientoAnualCOP = ventasBrutasAnualCOP * FINANCIAL_RATES.mantenimientoPct;
-  const gastosFinancierosAnualCOP = ventasBrutasAnualCOP * FINANCIAL_RATES.gastosFinancierosPct;
-  const serviciosPublicosAnualCOP = rates.serviciosPublicosCOP;
-  const predialAnualCOP = purchaseValueCOP * rates.predialPct;
-  const segurosAnualCOP = ventasBrutasAnualCOP * rates.segurosPct;
+  const aseoAnualCOP = isOn("aseo") ? ventasBrutasAnualCOP * rates.aseoAmenitiesPct : 0;
+  const mantenimientoAnualCOP = isOn("mantenimiento")
+    ? ventasBrutasAnualCOP * rates.mantenimientoPct
+    : 0;
+  const gastosFinancierosAnualCOP = isOn("gastosFinancieros")
+    ? ventasBrutasAnualCOP * rates.gastosFinancierosPct
+    : 0;
+  const serviciosPublicosAnualCOP = isOn("serviciosPublicos") ? rates.serviciosPublicosCOP : 0;
+  const predialAnualCOP = isOn("predial") ? purchaseValueCOP * rates.predialPct : 0;
+  const segurosAnualCOP = isOn("seguros") ? ventasBrutasAnualCOP * rates.segurosPct : 0;
 
   const totalGastosOperacionAnualCOP =
     aseoAnualCOP +
@@ -156,15 +169,31 @@ export function runSimulation(inputs: SimulatorInputs): SimulationResult {
     inputs.serviciosPublicosPct
   );
 
-  const costs = calculateCosts(ventasBrutasAnualCOP, purchaseValueCOP, {
-    serviciosPublicosCOP,
-    predialPct: inputs.predialPct,
-    segurosPct: inputs.segurosPct,
-  });
+  const rowEnabled = inputs.rowEnabled ?? {};
+  const isRowOn = (key: string) => rowEnabled[key] !== false;
 
-  const comisionSmartStayAnualCOP =
-    costs.utilidadOperacionalAnualCOP * inputs.comisionSmartStayPct;
-  const impuestoRentaAnualCOP = costs.utilidadOperacionalAnualCOP * inputs.impuestoRentaPct;
+  const costs = calculateCosts(
+    ventasBrutasAnualCOP,
+    purchaseValueCOP,
+    {
+      comisionOnlinePct: inputs.comisionOnlinePct,
+      faraPct: inputs.faraPct,
+      aseoAmenitiesPct: inputs.aseoAmenitiesPct,
+      mantenimientoPct: inputs.mantenimientoPct,
+      gastosFinancierosPct: inputs.gastosFinancierosPct,
+      serviciosPublicosCOP,
+      predialPct: inputs.predialPct,
+      segurosPct: inputs.segurosPct,
+    },
+    rowEnabled
+  );
+
+  const comisionSmartStayAnualCOP = isRowOn("comisionSmartStay")
+    ? costs.utilidadOperacionalAnualCOP * inputs.comisionSmartStayPct
+    : 0;
+  const impuestoRentaAnualCOP = isRowOn("impuestoRenta")
+    ? costs.utilidadOperacionalAnualCOP * inputs.impuestoRentaPct
+    : 0;
   const utilidadNetaAnualCOP =
     costs.utilidadOperacionalAnualCOP - comisionSmartStayAnualCOP - impuestoRentaAnualCOP;
   const utilidadNetaMensualCOP = utilidadNetaAnualCOP / 12;
@@ -175,12 +204,30 @@ export function runSimulation(inputs: SimulatorInputs): SimulationResult {
   );
 
   const rate = inputs.exchangeRate;
-  const table = buildTable(ventasBrutasAnualCOP, costs, {
-    comisionSmartStayAnualCOP,
-    impuestoRentaAnualCOP,
-    utilidadNetaAnualCOP,
-    rentabilidadAnual,
-  }, rate);
+  const table = buildTable(
+    ventasBrutasAnualCOP,
+    costs,
+    {
+      comisionOnlinePct: inputs.comisionOnlinePct,
+      faraPct: inputs.faraPct,
+      aseoAmenitiesPct: inputs.aseoAmenitiesPct,
+      mantenimientoPct: inputs.mantenimientoPct,
+      gastosFinancierosPct: inputs.gastosFinancierosPct,
+      serviciosPublicosPct: inputs.serviciosPublicosPct,
+      predialPct: inputs.predialPct,
+      segurosPct: inputs.segurosPct,
+      comisionSmartStayPct: inputs.comisionSmartStayPct,
+      impuestoRentaPct: inputs.impuestoRentaPct,
+    },
+    rowEnabled,
+    {
+      comisionSmartStayAnualCOP,
+      impuestoRentaAnualCOP,
+      utilidadNetaAnualCOP,
+      rentabilidadAnual,
+    },
+    rate
+  );
 
   return {
     purchaseValueCOP,
@@ -245,6 +292,19 @@ export function calculateScenario(
 function buildTable(
   ventasBrutasAnualCOP: number,
   costs: CostBreakdown,
+  rates: {
+    comisionOnlinePct: number;
+    faraPct: number;
+    aseoAmenitiesPct: number;
+    mantenimientoPct: number;
+    gastosFinancierosPct: number;
+    serviciosPublicosPct: number;
+    predialPct: number;
+    segurosPct: number;
+    comisionSmartStayPct: number;
+    impuestoRentaPct: number;
+  },
+  rowEnabled: Partial<Record<string, boolean>>,
   totals: {
     comisionSmartStayAnualCOP: number;
     impuestoRentaAnualCOP: number;
@@ -258,7 +318,8 @@ function buildTable(
     label: string,
     annualCOP: number,
     percent: number | null,
-    emphasis?: FinancialLineItem["emphasis"]
+    emphasis?: FinancialLineItem["emphasis"],
+    enabled?: boolean
   ): FinancialLineItem => ({
     key,
     label,
@@ -268,16 +329,31 @@ function buildTable(
     annualUSD: convertCOPtoUSD(annualCOP, rate),
     percent,
     emphasis,
+    enabled,
   });
 
+  const isOn = (key: string) => rowEnabled[key] !== false;
+
   const pct = (value: number) => (ventasBrutasAnualCOP > 0 ? value / ventasBrutasAnualCOP : 0);
-  const pctOfOperational = (value: number) =>
-    costs.utilidadOperacionalAnualCOP > 0 ? value / costs.utilidadOperacionalAnualCOP : 0;
 
   return [
     row("ventasBrutas", "Ventas brutas", ventasBrutasAnualCOP, 1, "subtotal"),
-    row("comisionOnline", "Comisión online", -costs.comisionOnlineAnualCOP, -FINANCIAL_RATES.comisionOnlinePct),
-    row("fara", "FARA / fondo de ahorro", -costs.faraAnualCOP, -FINANCIAL_RATES.faraPct),
+    row(
+      "comisionOnline",
+      "Comisión online",
+      -costs.comisionOnlineAnualCOP,
+      -rates.comisionOnlinePct,
+      undefined,
+      isOn("comisionOnline")
+    ),
+    row(
+      "fara",
+      "FARA / fondo de ahorro",
+      -costs.faraAnualCOP,
+      -rates.faraPct,
+      undefined,
+      isOn("fara")
+    ),
     row(
       "totalCostoVentas",
       "Total costo de ventas",
@@ -286,12 +362,54 @@ function buildTable(
       "subtotal"
     ),
     row("utilidadBruta", "Utilidad bruta", costs.utilidadBrutaAnualCOP, pct(costs.utilidadBrutaAnualCOP), "subtotal"),
-    row("aseo", "Aseo, amenities, lencería y lavandería", -costs.aseoAnualCOP, -FINANCIAL_RATES.aseoAmenitiesPct),
-    row("mantenimiento", "Mantenimiento", -costs.mantenimientoAnualCOP, -FINANCIAL_RATES.mantenimientoPct),
-    row("gastosFinancieros", "Gastos financieros / datáfonos", -costs.gastosFinancierosAnualCOP, -pct(costs.gastosFinancierosAnualCOP)),
-    row("serviciosPublicos", "Servicios públicos", -costs.serviciosPublicosAnualCOP, null),
-    row("predial", "Predial (anual s/ valor propiedad)", -costs.predialAnualCOP, null),
-    row("seguros", "Seguros", -costs.segurosAnualCOP, -pct(costs.segurosAnualCOP)),
+    row(
+      "aseo",
+      "Aseo, amenities, lencería y lavandería",
+      -costs.aseoAnualCOP,
+      -rates.aseoAmenitiesPct,
+      undefined,
+      isOn("aseo")
+    ),
+    row(
+      "mantenimiento",
+      "Mantenimiento",
+      -costs.mantenimientoAnualCOP,
+      -rates.mantenimientoPct,
+      undefined,
+      isOn("mantenimiento")
+    ),
+    row(
+      "gastosFinancieros",
+      "Gastos financieros / datáfonos",
+      -costs.gastosFinancierosAnualCOP,
+      -rates.gastosFinancierosPct,
+      undefined,
+      isOn("gastosFinancieros")
+    ),
+    row(
+      "serviciosPublicos",
+      "Servicios públicos",
+      -costs.serviciosPublicosAnualCOP,
+      -rates.serviciosPublicosPct,
+      undefined,
+      isOn("serviciosPublicos")
+    ),
+    row(
+      "predial",
+      "Predial (anual s/ valor propiedad)",
+      -costs.predialAnualCOP,
+      -rates.predialPct,
+      undefined,
+      isOn("predial")
+    ),
+    row(
+      "seguros",
+      "Seguros",
+      -costs.segurosAnualCOP,
+      -rates.segurosPct,
+      undefined,
+      isOn("seguros")
+    ),
     row(
       "totalGastosOperacion",
       "Total gastos de operación",
@@ -310,13 +428,17 @@ function buildTable(
       "comisionSmartStay",
       "Comisión Smart Stay / GEH",
       -totals.comisionSmartStayAnualCOP,
-      -pctOfOperational(totals.comisionSmartStayAnualCOP)
+      -rates.comisionSmartStayPct,
+      undefined,
+      isOn("comisionSmartStay")
     ),
     row(
       "impuestoRenta",
       "Impuesto de renta",
       -totals.impuestoRentaAnualCOP,
-      -pctOfOperational(totals.impuestoRentaAnualCOP)
+      -rates.impuestoRentaPct,
+      undefined,
+      isOn("impuestoRenta")
     ),
     row("utilidadNeta", "Utilidad neta propietario", totals.utilidadNetaAnualCOP, pct(totals.utilidadNetaAnualCOP), "total"),
     row("rentabilidad", "Rentabilidad sobre inversión", 0, totals.rentabilidadAnual, "total"),

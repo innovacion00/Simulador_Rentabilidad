@@ -44,6 +44,13 @@ export interface SimulatorInputs {
   impuestoRentaPct: number;
   /** Comisión de administración Smart Stay / GEH, sobre la utilidad operacional. */
   comisionSmartStayPct: number;
+  comisionOnlinePct: number;
+  faraPct: number;
+  aseoAmenitiesPct: number;
+  mantenimientoPct: number;
+  gastosFinancierosPct: number;
+  /** Activa (true/ausente) o desactiva (false) cada línea de costo/gasto de la tabla financiera, por `key`. */
+  rowEnabled: Partial<Record<string, boolean>>;
 }
 
 export interface FinancialLineItem {
@@ -57,6 +64,8 @@ export interface FinancialLineItem {
   percent: number | null;
   /** Marca filas de subtotal/total para resaltarlas en la tabla. */
   emphasis?: "subtotal" | "total";
+  /** true si la línea de costo/gasto está activa; false si el usuario la desactivó (no afecta filas sin costo asociado). */
+  enabled?: boolean;
 }
 
 export interface SimulationResult {
