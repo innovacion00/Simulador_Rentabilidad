@@ -1,11 +1,9 @@
 import { formatCOP, formatPercent, formatUSD } from "./format";
 import type { SimulationResult, Typology } from "./types";
 
-/** Fotos de portada del PDF, en orden de izquierda a derecha (archivos servidos desde /public). */
-const COVER_PHOTO_SOURCES = [
-  "/piscina patio con rejas alta final 2.jpg",
-  "/piscina estudios alta.jpg",
-];
+/** Foto usada como marca de agua de fondo en todo el PDF (servida desde /public). */
+const WATERMARK_PHOTO_SRC = "/piscina patio con rejas alta final 2.jpg";
+const WATERMARK_OPACITY = 0.15;
 
 /** Descarga y comprime una imagen pública a JPEG en un canvas, para mantener el PDF liviano. */
 async function loadImageAsJPEG(
@@ -34,51 +32,95 @@ async function loadImageAsJPEG(
 }
 
 export async function downloadSimulationPDF(typology: Typology, result: SimulationResult) {
-  const { default: jsPDF } = await import("jspdf");
+  const { default: jsPDF, GState } = await import("jspdf");
   const autoTable = (await import("jspdf-autotable")).default;
 
   const doc = new jsPDF();
-  const navy: [number, number, number] = [10, 37, 64];
-  const gold: [number, number, number] = [201, 162, 75];
-  const pageWidthMM = doc.internal.pageSize.getWidth();
+  const navy: [number, number, number] = [10, 38, 64];
+  const gold: [number, number, number] = [201, 163, 74];
+  const goldText: [number, number, number] = [138, 108, 31];
+  const tan: [number, number, number] = [239, 232, 216];
+  const tanBorder: [number, number, number] = [221, 211, 176];
+  const dark: [number, number, number] = [31, 41, 55];
+  const red: [number, number, number] = [154, 74, 66];
+  const muted: [number, number, number] = [139, 132, 120];
 
-  doc.setFillColor(...navy);
-  doc.rect(0, 0, 210, 28, "F");
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(16);
-  doc.text("Simulador de Rentabilidad — Sunno Blue", 14, 13);
-  doc.setFontSize(10);
-  doc.setTextColor(230, 230, 230);
-  doc.text("Smart Stay", 14, 20);
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
 
-  let photoBottomY = 28;
+  // Marca de agua de fondo, en toda la página, detrás de todo el contenido.
   try {
-    const photoWidthMM = 55;
-    const photoGapMM = 6;
-    const photoY = 28 + 8;
-    const totalWidthMM = photoWidthMM * COVER_PHOTO_SOURCES.length + photoGapMM * (COVER_PHOTO_SOURCES.length - 1);
-    const startX = (pageWidthMM - totalWidthMM) / 2;
-
-    const photos = await Promise.all(
-      COVER_PHOTO_SOURCES.map((src) => loadImageAsJPEG(src, 700, 0.75))
-    );
-
-    photos.forEach(({ dataUrl, width, height }, i) => {
-      const photoHeightMM = (height / width) * photoWidthMM;
-      const photoX = startX + i * (photoWidthMM + photoGapMM);
-      doc.addImage(dataUrl, "JPEG", photoX, photoY, photoWidthMM, photoHeightMM);
-      photoBottomY = Math.max(photoBottomY, photoY + photoHeightMM);
-    });
+    const wm = await loadImageAsJPEG(WATERMARK_PHOTO_SRC, 1000, 0.7);
+    const imgRatio = wm.width / wm.height;
+    const pageRatio = pageWidth / pageHeight;
+    let drawW: number, drawH: number, offsetX: number, offsetY: number;
+    if (imgRatio > pageRatio) {
+      drawH = pageHeight;
+      drawW = pageHeight * imgRatio;
+      offsetX = (pageWidth - drawW) / 2;
+      offsetY = 0;
+    } else {
+      drawW = pageWidth;
+      drawH = pageWidth / imgRatio;
+      offsetX = 0;
+      offsetY = (pageHeight - drawH) / 2;
+    }
+    doc.saveGraphicsState();
+    doc.setGState(new GState({ opacity: WATERMARK_OPACITY }));
+    doc.addImage(wm.dataUrl, "JPEG", offsetX, offsetY, drawW, drawH);
+    doc.restoreGraphicsState();
   } catch (error) {
-    console.error("No se pudieron cargar las fotos de portada para el PDF.", error);
+    console.error("No se pudo cargar la marca de agua de fondo para el PDF.", error);
   }
 
+  // Encabezado (navy, opaco).
+  const headerHeight = 30;
+  doc.setFillColor(...navy);
+  doc.rect(0, 0, pageWidth, headerHeight, "F");
+  doc.setTextColor(...tan);
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "bold");
+  doc.text("SMART STAY", 14, 12);
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(19);
+  doc.text("Simulador de Rentabilidad — Sunno Blue", 14, 22);
+
+  // Franja de tipología (tan translúcida).
+  const barHeight = 14;
+  const barY = headerHeight;
+  doc.saveGraphicsState();
+  doc.setGState(new GState({ opacity: 0.88 }));
+  doc.setFillColor(...tan);
+  doc.rect(0, barY, pageWidth, barHeight, "F");
+  doc.restoreGraphicsState();
+  doc.setDrawColor(...tanBorder);
+  doc.setLineWidth(0.3);
+  doc.line(0, barY + barHeight, pageWidth, barY + barHeight);
+
+  doc.setFontSize(8);
+  doc.setTextColor(...goldText);
+  doc.setFont("helvetica", "bold");
+  doc.text("TIPOLOGÍA", 14, barY + 6);
+  doc.setFontSize(12.5);
   doc.setTextColor(...navy);
-  doc.setFontSize(12);
-  doc.text(`Tipología: ${typology.label}`, 14, photoBottomY + 10);
+  doc.text(typology.label, 14 + doc.getTextWidth("TIPOLOGÍA") + 4, barY + 7);
+  doc.setFontSize(8);
+  doc.setTextColor(...goldText);
+  doc.text("PROYECCIÓN DE RENTABILIDAD", pageWidth - 14, barY + 6, { align: "right" });
+
+  let cursorY = barY + barHeight + 10;
+
+  // Indicadores financieros.
+  doc.setFontSize(10.5);
+  doc.setTextColor(...navy);
+  doc.setFont("helvetica", "bold");
+  doc.text("INDICADORES FINANCIEROS", 14, cursorY);
+  cursorY += 5;
+
+  const kpiHighlightRows = new Set([3, 5]);
 
   autoTable(doc, {
-    startY: photoBottomY + 16,
+    startY: cursorY,
     head: [["Indicador", "COP", "USD"]],
     body: [
       ["Inversión total", formatCOP(result.purchaseValueCOP), formatUSD(result.purchaseValueUSD)],
@@ -108,24 +150,31 @@ export async function downloadSimulationPDF(typology: Typology, result: Simulati
       ["Rentabilidad anual", formatPercent(result.rentabilidadAnual), ""],
       ["Rentabilidad mensual", formatPercent(result.rentabilidadMensual), ""],
     ],
-    headStyles: { fillColor: navy },
-    styles: { fontSize: 10 },
+    headStyles: { fillColor: navy, textColor: [255, 255, 255] },
+    styles: { fontSize: 10, textColor: dark },
+    didParseCell: (data) => {
+      if (data.section === "body" && kpiHighlightRows.has(data.row.index)) {
+        data.cell.styles.fontStyle = "bold";
+        data.cell.styles.textColor = goldText;
+      }
+    },
   });
 
-  const finalY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY;
+  cursorY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 10;
 
-  const boldRowKeys = new Set([
-    "ventasBrutas",
-    "totalCostoVentas",
-    "utilidadBruta",
-    "totalGastosOperacion",
-    "utilidadOperacional",
-    "utilidadNeta",
-    "rentabilidad",
-  ]);
+  // Estado de resultados, con línea dorada divisoria junto al título.
+  doc.setFontSize(10.5);
+  doc.setTextColor(...navy);
+  doc.setFont("helvetica", "bold");
+  doc.text("ESTADO DE RESULTADOS", 14, cursorY);
+  const titleWidth = doc.getTextWidth("ESTADO DE RESULTADOS");
+  doc.setDrawColor(...gold);
+  doc.setLineWidth(0.6);
+  doc.line(14 + titleWidth + 4, cursorY - 1.5, pageWidth - 14, cursorY - 1.5);
+  cursorY += 5;
 
   autoTable(doc, {
-    startY: finalY + 10,
+    startY: cursorY,
     head: [["Concepto", "Mensual COP", "Anual COP", "%"]],
     body: result.table.map((row) => [
       row.label,
@@ -134,22 +183,52 @@ export async function downloadSimulationPDF(typology: Typology, result: Simulati
       row.percent === null ? "—" : formatPercent(row.percent),
     ]),
     headStyles: { fillColor: gold, textColor: navy },
-    styles: { fontSize: 8.5 },
+    styles: { fontSize: 8.5, textColor: dark },
     didParseCell: (data) => {
-      if (data.section === "body" && boldRowKeys.has(result.table[data.row.index]?.key)) {
+      const row = result.table[data.row.index];
+      if (data.section !== "body" || !row) return;
+
+      if (row.emphasis) {
         data.cell.styles.fontStyle = "bold";
+      }
+
+      const valueByColumn: Record<number, number | null> = {
+        1: row.key === "rentabilidad" ? null : row.monthlyCOP,
+        2: row.key === "rentabilidad" ? null : row.annualCOP,
+        3: row.percent,
+      };
+      const value = valueByColumn[data.column.index];
+      if (typeof value === "number" && value < 0) {
+        data.cell.styles.textColor = red;
+      }
+    },
+    didDrawCell: (data) => {
+      const row = result.table[data.row.index];
+      if (data.section === "body" && row?.emphasis && data.column.index === 0) {
+        doc.setDrawColor(...navy);
+        doc.setLineWidth(0.4);
+        doc.line(
+          data.cell.x,
+          data.cell.y,
+          data.cell.x + data.table.getWidth(pageWidth),
+          data.cell.y
+        );
       }
     },
   });
 
-  const pageHeight = doc.internal.pageSize.getHeight();
+  // Pie de página con aviso legal.
+  doc.setDrawColor(...tanBorder);
+  doc.setLineWidth(0.3);
+  doc.line(14, pageHeight - 16, pageWidth - 14, pageHeight - 16);
+  doc.setFont("helvetica", "italic");
   doc.setFontSize(7.5);
-  doc.setTextColor(120, 120, 120);
+  doc.setTextColor(...muted);
   doc.text(
     "Proyecciones estimadas, sin garantía financiera ni oferta pública de valores. Sujetas a variaciones comerciales, operativas y de mercado.",
     14,
     pageHeight - 10,
-    { maxWidth: 182 }
+    { maxWidth: pageWidth - 28 }
   );
 
   doc.save(`simulacion-sunno-blue-${typology.id.toLowerCase()}.pdf`);
