@@ -28,10 +28,10 @@ export function calculateAnnualRevenue(
 
 /**
  * Servicios públicos ya no se calcula como % de las ventas del escenario activo.
- * Se fija una única base (Casa A y B, escenario pesimista = serviciosPublicosPct x
- * ventas de Casa A y B en pesimista) y todo lo demás se deriva en cascada:
+ * Se fija una única base (Casa A/B, escenario pesimista = serviciosPublicosPct x
+ * ventas de Casa A/B en pesimista) y todo lo demás se deriva en cascada:
  * conservador = pesimista x 1.05, optimista = conservador x 1.05, y cada tipología
- * superior parte del pesimista de Casa A y B con su propio incremento fijo.
+ * superior parte del pesimista de Casa A/B con su propio incremento fijo.
  */
 export function calculateServiciosPublicosCOP(
   group: TypologyGroup,

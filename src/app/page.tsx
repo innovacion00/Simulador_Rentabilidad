@@ -14,14 +14,14 @@ import {
   DEFAULT_AVAILABLE_DAYS,
   DEFAULT_EXCHANGE_RATE_COP_USD,
   FINANCIAL_RATES,
-  QUICK_TYPOLOGIES,
+  HOME_TYPOLOGIES,
   getTypologyById,
 } from "@/lib/constants";
 import { calculateScenario, runSimulation } from "@/lib/calculations";
 import type { OccupancyScenarioKey, SimulatorInputs } from "@/lib/types";
 import { isValid, validateInputs } from "@/lib/validation";
 
-const initialTypology = QUICK_TYPOLOGIES[0];
+const initialTypology = HOME_TYPOLOGIES[0];
 
 const INITIAL_INPUTS: SimulatorInputs = {
   typologyId: initialTypology.id,

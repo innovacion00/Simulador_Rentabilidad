@@ -8,6 +8,7 @@ import {
   OWNER_USAGE_DAYS_MAX,
   OWNER_USAGE_DAYS_MIN,
   QUICK_TYPOLOGIES,
+  SUITE_ROOFTOP_TYPOLOGIES,
 } from "@/lib/constants";
 import { formatCOP, formatNumber } from "@/lib/format";
 import type { OccupancyScenarioKey, SimulatorInputs } from "@/lib/types";
@@ -33,7 +34,7 @@ export function SimulatorForm({ inputs, errors, onChange }: SimulatorFormProps) 
 
   const groupedHomes = useMemo(() => {
     const groups = new Map<string, typeof HOME_TYPOLOGIES>();
-    for (const t of HOME_TYPOLOGIES) {
+    for (const t of [...HOME_TYPOLOGIES, ...SUITE_ROOFTOP_TYPOLOGIES]) {
       const list = groups.get(t.group) ?? [];
       list.push(t);
       groups.set(t.group, list);
@@ -42,7 +43,9 @@ export function SimulatorForm({ inputs, errors, onChange }: SimulatorFormProps) 
   }, []);
 
   const handleTypologyChange = (id: string) => {
-    const typology = [...QUICK_TYPOLOGIES, ...HOME_TYPOLOGIES].find((t) => t.id === id);
+    const typology = [...QUICK_TYPOLOGIES, ...HOME_TYPOLOGIES, ...SUITE_ROOFTOP_TYPOLOGIES].find(
+      (t) => t.id === id
+    );
     if (!typology) return;
     onChange({
       typologyId: id,
@@ -103,13 +106,6 @@ export function SimulatorForm({ inputs, errors, onChange }: SimulatorFormProps) 
             onChange={(e) => handleTypologyChange(e.target.value)}
             className="w-full rounded-xl border border-navy-900/10 bg-white px-3.5 py-2.5 text-sm text-ink-900 shadow-sm outline-none transition-colors focus:border-caribbean-500 focus:ring-2 focus:ring-caribbean-500/20"
           >
-            <optgroup label="Cálculo rápido por casa">
-              {QUICK_TYPOLOGIES.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.label}
-                </option>
-              ))}
-            </optgroup>
             {[...groupedHomes.entries()].map(([group, list]) => (
               <optgroup key={group} label={`Tipologías · ${group}`}>
                 {list.map((t) => (
@@ -270,8 +266,8 @@ export function SimulatorForm({ inputs, errors, onChange }: SimulatorFormProps) 
       {advancedOpen ? (
         <div className="mt-4 grid gap-5 rounded-2xl bg-sand-100/60 p-5 sm:grid-cols-2">
           <FieldShell
-            label="Servicios públicos — base Casa A y B / Pesimista (%)"
-            hint="Base sugerida 19% sobre ventas de Casa A y B en escenario pesimista. Conservador y optimista suman 5% en cascada; Casa C y D parten de esta base con un incremento fijo por tipología."
+            label="Servicios públicos — base Casa A/B / Pesimista (%)"
+            hint="Base sugerida 19% sobre ventas de Casa A/B en escenario pesimista. Conservador y optimista suman 5% en cascada; Casa C y D parten de esta base con un incremento fijo por tipología."
           >
             <NumberInput
               value={inputs.serviciosPublicosPct * 100}

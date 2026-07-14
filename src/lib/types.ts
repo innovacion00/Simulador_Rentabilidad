@@ -1,6 +1,15 @@
 export type Currency = "COP" | "USD";
 
-export type TypologyGroup = "Casa A y B" | "Casa C" | "Casa D" | "Casa E";
+export type TypologyGroup =
+  | "Casa A"
+  | "Casa B"
+  | "Casa C"
+  | "Casa D"
+  | "Casa E"
+  | "Suite A"
+  | "Suite B"
+  | "Suite C"
+  | "Rooftop A";
 
 export type TypologyTier = "Base" | "Superior (S)" | "Privé (piscina privada)";
 
