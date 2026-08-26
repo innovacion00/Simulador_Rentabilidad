@@ -137,7 +137,7 @@ export const SUITE_ROOFTOP_TYPOLOGIES: Typology[] = [
     label: "Suite A",
     group: "Suite A",
     tier: "Base",
-    baseValueCOP: 319_923_000,
+    baseValueCOP: 328_593_000,
     baseADRCOP: 350_000,
   },
   {
@@ -169,8 +169,16 @@ export const SUITE_ROOFTOP_TYPOLOGIES: Typology[] = [
     label: "Rooftop A",
     group: "Rooftop A",
     tier: "Base",
-    baseValueCOP: 480_000_000,
+    baseValueCOP: 489_600_000,
     baseADRCOP: 500_000,
+  },
+  {
+    id: "ROOFTOP-B",
+    label: "Rooftop B",
+    group: "Rooftop B",
+    tier: "Base",
+    baseValueCOP: 588_348_780,
+    baseADRCOP: 600_000,
   },
 ];
 
@@ -205,6 +213,7 @@ export const SERVICIOS_TIPOLOGIA_INCREMENT: Record<TypologyGroup, number> = {
   "Suite B": 0,
   "Suite C": 0,
   "Rooftop A": 0,
+  "Rooftop B": 0,
 };
 
 /** Incremento de servicios públicos al pasar de pesimista a conservador, y de conservador a optimista. */
@@ -215,7 +224,7 @@ export const ADR_PRESETS_COP = [
   500_000, 550_000, 600_000, 650_000, 700_000, 750_000, 800_000,
 ];
 
-export const DEFAULT_EXCHANGE_RATE_COP_USD = 4_050;
+export const DEFAULT_EXCHANGE_RATE_COP_USD = 0;
 
 export const DEFAULT_AVAILABLE_DAYS = 330;
 export const OWNER_USAGE_DAYS_MIN = 30;

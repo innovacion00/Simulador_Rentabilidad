@@ -9,7 +9,8 @@ export type TypologyGroup =
   | "Suite A"
   | "Suite B"
   | "Suite C"
-  | "Rooftop A";
+  | "Rooftop A"
+  | "Rooftop B";
 
 export type TypologyTier = "Base" | "Superior (S)" | "Privé (piscina privada)";
 
